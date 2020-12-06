@@ -412,31 +412,868 @@ div.tocify {
 
 <p><strong>IMPORTANT:</strong> You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.</p>
 <p>This is an <code>.Rmd</code> file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a # in front of your text, it will create a top level-header.</p>
-<div id="my-first-post" class="section level1">
-<h1><span class="header-section-number">1</span> My first post</h1>
-<p>Last compiled: 2020-12-05</p>
-<p>Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left.</p>
-<div id="second-level-header" class="section level2">
-<h2><span class="header-section-number">1.1</span> Second level header</h2>
-<p>You can add more headers by adding more hashtags. These won’t be put into the table of contents</p>
-<div id="third-level-header" class="section level3">
-<h3><span class="header-section-number">1.1.1</span> third level header</h3>
-<p>Here’s an even lower level header</p>
+<div id="challenge-intro-to-the-tidyverse" class="section level1">
+<h1><span class="header-section-number">1</span> Challenge : Intro to the tidyverse</h1>
+<p>Last compiled: 2020-12-06</p>
+<div id="problem-statment--" class="section level2">
+<h2><span class="header-section-number">1.1</span> Problem Statment :-</h2>
+<p>" Analyze the sales by location (state) with a bar plot. Since state and city are multiple features (variables), they should be split. Which state has the highes revenue? Replace your bike_orderlines_wrangled_tbl object with the newly wrangled object (with the columns state and city)."</p>
+<pre class="r"><code># 2.0 Importing library ----
+library(readxl)
+library(dplyr)
+library(stringr)
+library(rlang)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(writexl)
+library(readr)
+
+# 2.0 Importing Files ----
+# A good convention is to use the file name and suffix it with tbl for the data structure tibble
+
+bikes_tbl &lt;- read_excel(&quot;C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikes.xlsx&quot;)
+orderlines_tbl &lt;- read_excel(&quot;C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/orderlines.xlsx&quot;)
+bikeshops_tbl &lt;- read_excel(&quot;C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikeshops.xlsx&quot;)
+
+# If the data has no common column name, you can provide each column name in the &quot;by&quot; argument. For example, by = c(&quot;a&quot; = &quot;b&quot;) will match x.a to y.b. The order of the columns has to match the order of the tibbles).
+
+left_join(orderlines_tbl, bikes_tbl, by = c(&quot;product.id&quot; = &quot;bike.id&quot;))</code></pre>
+<pre><code>## # A tibble: 15,644 x 15
+##    ...1  order.id order.line order.date          customer.id product.id quantity
+##    &lt;chr&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dttm&gt;                    &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;
+##  1 1            1          1 2015-01-07 00:00:00           2       2681        1
+##  2 2            1          2 2015-01-07 00:00:00           2       2411        1
+##  3 3            2          1 2015-01-10 00:00:00          10       2629        1
+##  4 4            2          2 2015-01-10 00:00:00          10       2137        1
+##  5 5            3          1 2015-01-10 00:00:00           6       2367        1
+##  6 6            3          2 2015-01-10 00:00:00           6       1973        1
+##  7 7            3          3 2015-01-10 00:00:00           6       2422        1
+##  8 8            3          4 2015-01-10 00:00:00           6       2655        1
+##  9 9            3          5 2015-01-10 00:00:00           6       2247        1
+## 10 10           4          1 2015-01-11 00:00:00          22       2408        1
+## # ... with 15,634 more rows, and 8 more variables: model &lt;chr&gt;,
+## #   model.year &lt;dbl&gt;, frame.material &lt;chr&gt;, weight &lt;dbl&gt;, price &lt;dbl&gt;,
+## #   category &lt;chr&gt;, gender &lt;chr&gt;, url &lt;chr&gt;</code></pre>
+<pre class="r"><code># Chaining commands with the pipe and assigning it to 
+
+bike_orderlines_joined_tbl &lt;- orderlines_tbl %&gt;%
+  left_join(bikes_tbl, by = c(&quot;product.id&quot; = &quot;bike.id&quot;)) %&gt;%
+  left_join(bikeshops_tbl, by = c(&quot;customer.id&quot; = &quot;bikeshop.id&quot;))
+
+# Examine the results with glimpse()
+bike_orderlines_joined_tbl %&gt;% glimpse()</code></pre>
+<pre><code>## Rows: 15,644
+## Columns: 19
+## $ ...1           &lt;chr&gt; &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;, &quot;...
+## $ order.id       &lt;dbl&gt; 1, 1, 2, 2, 3, 3, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6...
+## $ order.line     &lt;dbl&gt; 1, 2, 1, 2, 1, 2, 3, 4, 5, 1, 1, 2, 3, 4, 1, 2, 3, 4...
+## $ order.date     &lt;dttm&gt; 2015-01-07, 2015-01-07, 2015-01-10, 2015-01-10, 201...
+## $ customer.id    &lt;dbl&gt; 2, 2, 10, 10, 6, 6, 6, 6, 6, 22, 8, 8, 8, 8, 16, 16,...
+## $ product.id     &lt;dbl&gt; 2681, 2411, 2629, 2137, 2367, 1973, 2422, 2655, 2247...
+## $ quantity       &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1...
+## $ model          &lt;chr&gt; &quot;Spectral CF 7 WMN&quot;, &quot;Ultimate CF SLX Disc 8.0 ETAP&quot;...
+## $ model.year     &lt;dbl&gt; 2021, 2020, 2021, 2019, 2020, 2020, 2020, 2021, 2020...
+## $ frame.material &lt;chr&gt; &quot;carbon&quot;, &quot;carbon&quot;, &quot;carbon&quot;, &quot;carbon&quot;, &quot;aluminium&quot;,...
+## $ weight         &lt;dbl&gt; 13.80, 7.44, 14.06, 8.80, 11.50, 8.80, 8.20, 8.85, 1...
+## $ price          &lt;dbl&gt; 3119, 5359, 2729, 1749, 1219, 1359, 2529, 1559, 3899...
+## $ category       &lt;chr&gt; &quot;Mountain - Trail - Spectral&quot;, &quot;Road - Race - Ultima...
+## $ gender         &lt;chr&gt; &quot;female&quot;, &quot;unisex&quot;, &quot;unisex&quot;, &quot;unisex&quot;, &quot;unisex&quot;, &quot;u...
+## $ url            &lt;chr&gt; &quot;https://www.canyon.com/en-de/mountain-bikes/trail-b...
+## $ name           &lt;chr&gt; &quot;AlexandeRad&quot;, &quot;AlexandeRad&quot;, &quot;WITT-RAD&quot;, &quot;WITT-RAD&quot;...
+## $ location       &lt;chr&gt; &quot;Hamburg, Hamburg&quot;, &quot;Hamburg, Hamburg&quot;, &quot;Bremen, Bre...
+## $ lat            &lt;dbl&gt; 53.57532, 53.57532, 53.07379, 53.07379, 48.78234, 48...
+## $ lng            &lt;dbl&gt; 10.015340, 10.015340, 8.826754, 8.826754, 9.180819, ...</code></pre>
+<pre class="r"><code>bike_orderlines_joined_tbl %&gt;% 
+  select(category) %&gt;%
+  filter(str_detect(category, &quot;^Mountain&quot;)) %&gt;% 
+  unique()</code></pre>
+<pre><code>## # A tibble: 10 x 1
+##    category                         
+##    &lt;chr&gt;                            
+##  1 Mountain - Trail - Spectral      
+##  2 Mountain - Trail - Neuron        
+##  3 Mountain - Dirt Jump - Stitched  
+##  4 Mountain - Enduro - Torque       
+##  5 Mountain - Trail - Grand Canyon  
+##  6 Mountain - Cross-Country - Lux   
+##  7 Mountain - Enduro - Strive       
+##  8 Mountain - Downhill - Sender     
+##  9 Mountain - Fat Bikes - Dude      
+## 10 Mountain - Cross-Country - Exceed</code></pre>
+<pre class="r"><code># 3.0 Wrangling Data ----
+# All actions are chained with the pipe already. You can perform each step separately and use glimpse() or View() to validate your code. Store the result in a variable at the end of the steps.
+bike_orderlines_wrangled_tbl &lt;- bike_orderlines_joined_tbl %&gt;%
+  # 3.1 Separate category name
+  separate (col= category,into   = c(&quot;category.1&quot;, &quot;category.2&quot;, &quot;category.3&quot;),sep= &quot; - &quot;)%&gt;% 
+  # 3.2 Add the total price (price * quantity) 
+  # Add a column to a tibble that uses a formula-style calculation of other columns
+  mutate(total.price = price * quantity) %&gt;%
+  # 3.3 Optional: Reorganize. Using select to grab or remove unnecessary columns
+  # 3.3.1 by exact column name
+  select(-...1, -gender) %&gt;%
+  # 3.3.2 by a pattern
+  # You can use the select_helpers to define patterns. 
+  # Type ?ends_with and click on Select helpers in the documentation
+  select(-ends_with(&quot;.id&quot;)) %&gt;%
+  # 3.3.3 Actually we need the column &quot;order.id&quot;. Let&#39;s bind it back to the data
+  bind_cols(bike_orderlines_joined_tbl %&gt;% select(order.id)) %&gt;%
+  # 3.3.4 You can reorder the data by selecting the columns in your desired order.
+  # You can use select_helpers like contains() or everything()
+  select(order.id, contains(&quot;order&quot;), contains(&quot;model&quot;), contains(&quot;category&quot;),
+         price, quantity, total.price,
+         everything()) %&gt;%
+  # 3.4 Rename columns because we actually wanted underscores instead of the dots
+  # (one at the time vs. multiple at once)
+  rename(bikeshop = name) %&gt;%
+  set_names(names(.) %&gt;% str_replace_all(&quot;\\.&quot;, &quot;_&quot;))
+
+# 4.0 Business Insights ----
+# 4.1 Sales by location ----
+
+# Step 1 - Manipulate
+sales_by_state_cat_1_tbl &lt;- bike_orderlines_wrangled_tbl %&gt;%
+  # Select columns
+  tidyr::separate(col = location,
+           into = c(&quot;city&quot;,&quot;state&quot;),
+           sep = &quot;,&quot;) %&gt;% 
+  # Select columns and add a year
+  select(state, total_price) %&gt;%
+  
+  # Group by and summarize year and main catgegory
+  group_by(state) %&gt;%
+  summarise(sales = sum(total_price)) %&gt;%
+  ungroup() 
+
+sales_by_state_cat_1_tbl</code></pre>
+<pre><code>## # A tibble: 12 x 2
+##    state                               sales
+##    &lt;chr&gt;                               &lt;dbl&gt;
+##  1 &quot; Baden-Württemberg&quot;              6521090
+##  2 &quot; Bavaria&quot;                        6742819
+##  3 &quot; Berlin&quot;                         1128433
+##  4 &quot; Bremen&quot;                        10653499
+##  5 &quot; Hamburg&quot;                        3874756
+##  6 &quot; Hesse&quot;                          1558901
+##  7 &quot; Lower Saxony&quot;                   4107115
+##  8 &quot; Mecklenburg-Western Pomerania&quot;   618974
+##  9 &quot; North Rhine-Westphalia&quot;        21200613
+## 10 &quot; Saxony&quot;                         2230245
+## 11 &quot; Saxony-Anhalt&quot;                   569614
+## 12 &quot; Schleswig-Holstein&quot;             3224749</code></pre>
+<pre class="r"><code># Step to Visualize 
+sales_by_state_cat_1_tbl %&gt;%
+  
+  # Set up x, y, fill
+  ggplot(aes(x = state, y = sales)) +
+  
+  # Geometries
+  geom_col() + # Run up to here to get a stacked bar plot
+  
+  # Formatting
+  scale_y_continuous(labels = scales::dollar_format(big.mark = &quot;.&quot;, 
+                                                    decimal.mark = &quot;,&quot;, 
+                                                    prefix = &quot;&quot;, 
+                                                    suffix = &quot; €&quot;)) +
+  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+ 
+  
+  labs(
+    title = &quot;Revenue by year and main category&quot;,
+    subtitle = &quot;Each product category has an upward trend&quot;,
+    fill = &quot;Main category&quot; # Changes the legend name
+  )</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+</div>
+<div id="problem-statment-1.2" class="section level2">
+<h2><span class="header-section-number">1.2</span> Problem Statment 1.2</h2>
+<p>Analyze the sales by location and year (facet_wrap). Because there are 12 states with bike stores, you should get 12 plots. Insert your scripts and results into your website. It might be easier to move your entire project folder into your website folder.</p>
+<pre class="r"><code># 2.0 Importing library ----
+library(readxl)
+library(dplyr)
+library(stringr)
+library(rlang)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(writexl)
+library(readr)
+
+# 2.0 Importing Files ----
+# A good convention is to use the file name and suffix it with tbl for the data structure tibble
+
+bikes_tbl &lt;- read_excel(&quot;C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikes.xlsx&quot;)
+orderlines_tbl &lt;- read_excel(&quot;C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/orderlines.xlsx&quot;)
+bikeshops_tbl &lt;- read_excel(&quot;C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikeshops.xlsx&quot;)
+
+# If the data has no common column name, you can provide each column name in the &quot;by&quot; argument. For example, by = c(&quot;a&quot; = &quot;b&quot;) will match x.a to y.b. The order of the columns has to match the order of the tibbles).
+
+left_join(orderlines_tbl, bikes_tbl, by = c(&quot;product.id&quot; = &quot;bike.id&quot;))</code></pre>
+<pre><code>## # A tibble: 15,644 x 15
+##    ...1  order.id order.line order.date          customer.id product.id quantity
+##    &lt;chr&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dttm&gt;                    &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt;
+##  1 1            1          1 2015-01-07 00:00:00           2       2681        1
+##  2 2            1          2 2015-01-07 00:00:00           2       2411        1
+##  3 3            2          1 2015-01-10 00:00:00          10       2629        1
+##  4 4            2          2 2015-01-10 00:00:00          10       2137        1
+##  5 5            3          1 2015-01-10 00:00:00           6       2367        1
+##  6 6            3          2 2015-01-10 00:00:00           6       1973        1
+##  7 7            3          3 2015-01-10 00:00:00           6       2422        1
+##  8 8            3          4 2015-01-10 00:00:00           6       2655        1
+##  9 9            3          5 2015-01-10 00:00:00           6       2247        1
+## 10 10           4          1 2015-01-11 00:00:00          22       2408        1
+## # ... with 15,634 more rows, and 8 more variables: model &lt;chr&gt;,
+## #   model.year &lt;dbl&gt;, frame.material &lt;chr&gt;, weight &lt;dbl&gt;, price &lt;dbl&gt;,
+## #   category &lt;chr&gt;, gender &lt;chr&gt;, url &lt;chr&gt;</code></pre>
+<pre class="r"><code># Chaining commands with the pipe and assigning it to 
+
+bike_orderlines_joined_tbl &lt;- orderlines_tbl %&gt;%
+  left_join(bikes_tbl, by = c(&quot;product.id&quot; = &quot;bike.id&quot;)) %&gt;%
+  left_join(bikeshops_tbl, by = c(&quot;customer.id&quot; = &quot;bikeshop.id&quot;))
+
+# Examine the results with glimpse()
+bike_orderlines_joined_tbl %&gt;% glimpse()</code></pre>
+<pre><code>## Rows: 15,644
+## Columns: 19
+## $ ...1           &lt;chr&gt; &quot;1&quot;, &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;, &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;, &quot;...
+## $ order.id       &lt;dbl&gt; 1, 1, 2, 2, 3, 3, 3, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6...
+## $ order.line     &lt;dbl&gt; 1, 2, 1, 2, 1, 2, 3, 4, 5, 1, 1, 2, 3, 4, 1, 2, 3, 4...
+## $ order.date     &lt;dttm&gt; 2015-01-07, 2015-01-07, 2015-01-10, 2015-01-10, 201...
+## $ customer.id    &lt;dbl&gt; 2, 2, 10, 10, 6, 6, 6, 6, 6, 22, 8, 8, 8, 8, 16, 16,...
+## $ product.id     &lt;dbl&gt; 2681, 2411, 2629, 2137, 2367, 1973, 2422, 2655, 2247...
+## $ quantity       &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1...
+## $ model          &lt;chr&gt; &quot;Spectral CF 7 WMN&quot;, &quot;Ultimate CF SLX Disc 8.0 ETAP&quot;...
+## $ model.year     &lt;dbl&gt; 2021, 2020, 2021, 2019, 2020, 2020, 2020, 2021, 2020...
+## $ frame.material &lt;chr&gt; &quot;carbon&quot;, &quot;carbon&quot;, &quot;carbon&quot;, &quot;carbon&quot;, &quot;aluminium&quot;,...
+## $ weight         &lt;dbl&gt; 13.80, 7.44, 14.06, 8.80, 11.50, 8.80, 8.20, 8.85, 1...
+## $ price          &lt;dbl&gt; 3119, 5359, 2729, 1749, 1219, 1359, 2529, 1559, 3899...
+## $ category       &lt;chr&gt; &quot;Mountain - Trail - Spectral&quot;, &quot;Road - Race - Ultima...
+## $ gender         &lt;chr&gt; &quot;female&quot;, &quot;unisex&quot;, &quot;unisex&quot;, &quot;unisex&quot;, &quot;unisex&quot;, &quot;u...
+## $ url            &lt;chr&gt; &quot;https://www.canyon.com/en-de/mountain-bikes/trail-b...
+## $ name           &lt;chr&gt; &quot;AlexandeRad&quot;, &quot;AlexandeRad&quot;, &quot;WITT-RAD&quot;, &quot;WITT-RAD&quot;...
+## $ location       &lt;chr&gt; &quot;Hamburg, Hamburg&quot;, &quot;Hamburg, Hamburg&quot;, &quot;Bremen, Bre...
+## $ lat            &lt;dbl&gt; 53.57532, 53.57532, 53.07379, 53.07379, 48.78234, 48...
+## $ lng            &lt;dbl&gt; 10.015340, 10.015340, 8.826754, 8.826754, 9.180819, ...</code></pre>
+<pre class="r"><code>bike_orderlines_joined_tbl %&gt;% 
+  select(category) %&gt;%
+  filter(str_detect(category, &quot;^Mountain&quot;)) %&gt;% 
+  unique()</code></pre>
+<pre><code>## # A tibble: 10 x 1
+##    category                         
+##    &lt;chr&gt;                            
+##  1 Mountain - Trail - Spectral      
+##  2 Mountain - Trail - Neuron        
+##  3 Mountain - Dirt Jump - Stitched  
+##  4 Mountain - Enduro - Torque       
+##  5 Mountain - Trail - Grand Canyon  
+##  6 Mountain - Cross-Country - Lux   
+##  7 Mountain - Enduro - Strive       
+##  8 Mountain - Downhill - Sender     
+##  9 Mountain - Fat Bikes - Dude      
+## 10 Mountain - Cross-Country - Exceed</code></pre>
+<pre class="r"><code># 3.0 Wrangling Data ----
+# All actions are chained with the pipe already. You can perform each step separately and use glimpse() or View() to validate your code. Store the result in a variable at the end of the steps.
+bike_orderlines_wrangled_tbl &lt;- bike_orderlines_joined_tbl %&gt;%
+  # 3.1 Separate category name
+  separate (col= category,into   = c(&quot;category.1&quot;, &quot;category.2&quot;, &quot;category.3&quot;),sep= &quot; - &quot;)%&gt;% 
+  # 3.2 Add the total price (price * quantity) 
+  # Add a column to a tibble that uses a formula-style calculation of other columns
+  mutate(total.price = price * quantity) %&gt;%
+  # 3.3 Optional: Reorganize. Using select to grab or remove unnecessary columns
+  # 3.3.1 by exact column name
+  select(-...1, -gender) %&gt;%
+  # 3.3.2 by a pattern
+  # You can use the select_helpers to define patterns. 
+  # Type ?ends_with and click on Select helpers in the documentation
+  select(-ends_with(&quot;.id&quot;)) %&gt;%
+  # 3.3.3 Actually we need the column &quot;order.id&quot;. Let&#39;s bind it back to the data
+  bind_cols(bike_orderlines_joined_tbl %&gt;% select(order.id)) %&gt;%
+  # 3.3.4 You can reorder the data by selecting the columns in your desired order.
+  # You can use select_helpers like contains() or everything()
+  select(order.id, contains(&quot;order&quot;), contains(&quot;model&quot;), contains(&quot;category&quot;),
+         price, quantity, total.price,
+         everything()) %&gt;%
+  # 3.4 Rename columns because we actually wanted underscores instead of the dots
+  # (one at the time vs. multiple at once)
+  rename(bikeshop = name) %&gt;%
+  set_names(names(.) %&gt;% str_replace_all(&quot;\\.&quot;, &quot;_&quot;))
+
+# 4.0 Business Insights ----
+# 4.1 Sales by location ----
+
+# Step 1 - Manipulate
+sales_by_year_state_cat_1_tbl &lt;- bike_orderlines_wrangled_tbl %&gt;%
+  tidyr::separate(col = location,
+                  into = c(&quot;city&quot;,&quot;state&quot;),
+                  sep = &quot;,&quot;) %&gt;% 
+  
+  # Select columns and add a year
+  select(state,order_date, total_price) %&gt;%
+  mutate(year = year(order_date)) %&gt;% 
+  
+  # Group by and summarize year and main catgegory
+  group_by(year,state) %&gt;%
+  summarise(sales = sum(total_price)) %&gt;%
+  ungroup() 
+
+# Step 2 - Visualize
+sales_by_year_state_cat_1_tbl %&gt;%
+  
+  # Set up x, y, fill
+  ggplot(aes(x = year, y = sales, fill = state )) +
+  
+  # Geometries
+  geom_col() + # Run up to here to get a stacked bar plot
+  
+  facet_wrap(~ state)+
+  
+  # Formatting
+  scale_y_continuous(labels = scales::dollar_format(big.mark = &quot;.&quot;, 
+                                                    decimal.mark = &quot;,&quot;, 
+                                                    prefix = &quot;&quot;, 
+                                                    suffix = &quot; €&quot;)) +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  
+  labs(
+    title = &quot;Revenue by year and main category&quot;,
+    subtitle = &quot;Each product category has an upward trend&quot;,
+    fill = &quot;Main category&quot; # Changes the legend name
+  )</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 </div>
 </div>
+<div id="challenge-data-acquisition" class="section level1">
+<h1><span class="header-section-number">2</span> Challenge : Data Acquisition</h1>
+<p>Last compiled: 2020-12-06</p>
+<div id="problem-statment---1" class="section level2">
+<h2><span class="header-section-number">2.1</span> Problem Statment :-</h2>
+<p>" Get some data via an API. There are millions of providers, that offer API access for free and have good documentation about how to query their service. You just have to google them. You can use whatever service you want. For example, you can get data about your listening history (spotify), get data about flights (skyscanner) or just check the weather forecast."</p>
+<pre class="r"><code>## API Challenge 
+### This API to find out when the ISS (International Space Station) will be passing over Hamburg (which is at latitude 53.5511, longitude: 9.9937):
+#This API returns times to us in the form of Unix time.
+
+library(glue)
+library(httr)
+library(jsonlite)
+resp &lt;- GET(&quot;http://api.open-notify.org/iss-pass.json&quot;, query = list(lat =53.5511, lon = 9.9937))
+resp</code></pre>
+<pre><code>## Response [http://api.open-notify.org/iss-pass.json?lat=53.5511&amp;lon=9.9937]
+##   Date: 2020-12-06 18:57
+##   Status: 200
+##   Content-Type: application/json
+##   Size: 522 B
+## {
+##   &quot;message&quot;: &quot;success&quot;, 
+##   &quot;request&quot;: {
+##     &quot;altitude&quot;: 100, 
+##     &quot;datetime&quot;: 1607280489, 
+##     &quot;latitude&quot;: 53.5511, 
+##     &quot;longitude&quot;: 9.9937, 
+##     &quot;passes&quot;: 5
+##   }, 
+##   &quot;response&quot;: [
+## ...</code></pre>
+<pre class="r"><code>data = fromJSON(rawToChar(resp$content))
+data</code></pre>
+<pre><code>## $message
+## [1] &quot;success&quot;
+## 
+## $request
+## $request$altitude
+## [1] 100
+## 
+## $request$datetime
+## [1] 1607280489
+## 
+## $request$latitude
+## [1] 53.5511
+## 
+## $request$longitude
+## [1] 9.9937
+## 
+## $request$passes
+## [1] 5
+## 
+## 
+## $response
+##   duration   risetime
+## 1      303 1607280934
+## 2      391 1607335587
+## 3      608 1607341228
+## 4      649 1607346990
+## 5      650 1607352787</code></pre>
 </div>
-<div id="my-second-post-note-the-order" class="section level1">
-<h1><span class="header-section-number">2</span> My second post (note the order)</h1>
-<p>Last compiled: 2020-12-05</p>
-<p>I’m writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom</p>
+<div id="problem-statment---2" class="section level2">
+<h2><span class="header-section-number">2.2</span> Problem Statment :-</h2>
+<p>" Scrape one of the competitor websites of canyon (either <a href="https://www.rosebikes.de/" class="uri">https://www.rosebikes.de/</a> or <a href="https://www.radon-bikes.de" class="uri">https://www.radon-bikes.de</a>) and create a small database. The database should contain the model names and prices for at least one category. Use the selectorgadget to get a good understanding of the website structure."</p>
+<pre class="r"><code># WEBSCRAPING ----
+
+
+# 1.0 LIBRARIES ----
+
+library(tidyverse) # Main Package - Loads dplyr, purrr, etc.
+library(rvest)     # HTML Hacking &amp; Web Scraping
+library(xopen)     # Quickly opening URLs
+library(jsonlite)  # converts JSON files to R objects
+library(glue)      # concatenate strings
+library(stringi)   # character string/text processing
+
+# 1.1 COLLECT PRODUCT TYPES ----
+url_home          &lt;- &quot;https://www.radon-bikes.de/&quot;
+xopen(url_home)</code></pre>
+<pre><code>## Running cmd /c start &quot;\&quot;\&quot;&quot; /b &quot;https://www.radon-bikes.de/&quot;</code></pre>
+<pre class="r"><code>html_home         &lt;- read_html(url_home)
+bike_family_tbl &lt;- html_home %&gt;%
+html_nodes(css = &quot;.megamenu__item &gt; a&quot;) %&gt;%  
+html_attr(&#39;href&#39;) %&gt;%  
+discard(.p = ~stringr::str_detect(.x,&quot;wear&quot;)) %&gt;%  
+enframe(name = &quot;position&quot;, value = &quot;cat_subcat_url&quot;) %&gt;%  
+  
+mutate(family_id = str_glue(&quot;https://www.radon-bikes.de{cat_subcat_url}bikegrid&quot;))
+bike_family_tbl</code></pre>
+<pre><code>## # A tibble: 8 x 3
+##   position cat_subcat_url           family_id                                   
+##      &lt;int&gt; &lt;chr&gt;                    &lt;glue&gt;                                      
+## 1        1 /mountainbike/hardtail/  https://www.radon-bikes.de/mountainbike/har~
+## 2        2 /mountainbike/fullsuspe~ https://www.radon-bikes.de/mountainbike/ful~
+## 3        3 /trekking-cross/trekkin~ https://www.radon-bikes.de/trekking-cross/t~
+## 4        4 /trekking-cross/cross/   https://www.radon-bikes.de/trekking-cross/c~
+## 5        5 /e-bike/mountainbike/    https://www.radon-bikes.de/e-bike/mountainb~
+## 6        6 /e-bike/trekking/        https://www.radon-bikes.de/e-bike/trekking/~
+## 7        7 /roadbike/carbon/        https://www.radon-bikes.de/roadbike/carbon/~
+## 8        8 /roadbike/alu/           https://www.radon-bikes.de/roadbike/alu/bik~</code></pre>
+<pre class="r"><code># 2.0 COLLECT BIKE DATA ----
+
+bike_category_url &lt;- bike_family_tbl$family_id[1]
+xopen(bike_category_url)</code></pre>
+<pre><code>## Running cmd /c start &quot;\&quot;\&quot;&quot; /b \
+##   &quot;https://www.radon-bikes.de/mountainbike/hardtail/bikegrid&quot;</code></pre>
+<pre class="r"><code>html_bike_category  &lt;- read_html(bike_category_url)
+
+bike_name_tbl        &lt;- html_bike_category %&gt;%
+html_nodes(css = &quot;.m-bikegrid__info .a-heading--small&quot;) %&gt;%
+html_text() %&gt;%
+
+
+enframe(name = &quot;position&quot;, value = &quot;name&quot;)
+bike_name_tbl </code></pre>
+<pre><code>## # A tibble: 33 x 2
+##    position name                                                                
+##       &lt;int&gt; &lt;chr&gt;                                                               
+##  1        1 &quot;\n                                    JEALOUS 8.0\n               ~
+##  2        2 &quot;\n                                    JEALOUS 9.0\n               ~
+##  3        3 &quot;\n                                    JEALOUS 10.0\n              ~
+##  4        4 &quot;\n                                    JEALOUS 10.0 EA\n           ~
+##  5        5 &quot;\n                                    JEALOUS 10.0\n              ~
+##  6        6 &quot;\n                                    JEALOUS 10.0 EA\n           ~
+##  7        7 &quot;\n                                    NEW JEALOUS SUPERLITE 1X\n  ~
+##  8        8 &quot;\n                                    JEALOUS AL 8.0\n            ~
+##  9        9 &quot;\n                                    JEALOUS AL 8.0 HD\n         ~
+## 10       10 &quot;\n                                    JEALOUS AL 9.0\n            ~
+## # ... with 23 more rows</code></pre>
+<pre class="r"><code>bike_price_tbl &lt;- html_bike_category %&gt;%
+html_nodes(css = &quot;.m-bikegrid__price.currency_eur .m-bikegrid__price--active&quot;) %&gt;%  
+html_text() %&gt;% 
+enframe(name = &quot;position&quot;, value = &quot;price&quot;)
+bike_price_tbl</code></pre>
+<pre><code>## # A tibble: 33 x 2
+##    position price 
+##       &lt;int&gt; &lt;chr&gt; 
+##  1        1 2599 €
+##  2        2 2999 €
+##  3        3 3999 €
+##  4        4 5299 €
+##  5        5 3699 €
+##  6        6 3799€ 
+##  7        7 999 € 
+##  8        8 999 € 
+##  9        9 1299 €
+## 10       10 1499 €
+## # ... with 23 more rows</code></pre>
+<pre class="r"><code>model_price_tbl &lt;- left_join(bike_name_tbl, bike_price_tbl)%&gt;% 
+select(name, price)
+model_price_tbl</code></pre>
+<pre><code>## # A tibble: 33 x 2
+##    name                                                                    price
+##    &lt;chr&gt;                                                                   &lt;chr&gt;
+##  1 &quot;\n                                    JEALOUS 8.0\n                  ~ 2599~
+##  2 &quot;\n                                    JEALOUS 9.0\n                  ~ 2999~
+##  3 &quot;\n                                    JEALOUS 10.0\n                 ~ 3999~
+##  4 &quot;\n                                    JEALOUS 10.0 EA\n              ~ 5299~
+##  5 &quot;\n                                    JEALOUS 10.0\n                 ~ 3699~
+##  6 &quot;\n                                    JEALOUS 10.0 EA\n              ~ 3799€
+##  7 &quot;\n                                    NEW JEALOUS SUPERLITE 1X\n     ~ 999 €
+##  8 &quot;\n                                    JEALOUS AL 8.0\n               ~ 999 €
+##  9 &quot;\n                                    JEALOUS AL 8.0 HD\n            ~ 1299~
+## 10 &quot;\n                                    JEALOUS AL 9.0\n               ~ 1499~
+## # ... with 23 more rows</code></pre>
+</div>
+</div>
+<div id="challenge-data-visualization" class="section level1">
+<h1><span class="header-section-number">3</span> Challenge : Data Visualization</h1>
+<p>Last compiled: 2020-12-06</p>
+<div id="problem-statement" class="section level2">
+<h2><span class="header-section-number">3.1</span> Problem Statement :</h2>
+<p>“Goal: Map the time course of the cumulative Covid-19 cases!”</p>
+<pre class="r"><code># Data Visualization
+
+# Importing library-----
+
+library(tidyverse)
+library(data.table)
+library(ggplot2)
+library(ggrepel)
+
+# Importing Data from given url-----
+url &lt;- &quot;https://opendata.ecdc.europa.eu/covid19/casedistribution/csv&quot;
+covid_data_tbl &lt;- fread(url)
+
+class(covid_data_tbl)</code></pre>
+<pre><code>## [1] &quot;data.table&quot; &quot;data.frame&quot;</code></pre>
+<pre class="r"><code>colnames(covid_data_tbl)</code></pre>
+<pre><code>##  [1] &quot;dateRep&quot;                                                   
+##  [2] &quot;day&quot;                                                       
+##  [3] &quot;month&quot;                                                     
+##  [4] &quot;year&quot;                                                      
+##  [5] &quot;cases&quot;                                                     
+##  [6] &quot;deaths&quot;                                                    
+##  [7] &quot;countriesAndTerritories&quot;                                   
+##  [8] &quot;geoId&quot;                                                     
+##  [9] &quot;countryterritoryCode&quot;                                      
+## [10] &quot;popData2019&quot;                                               
+## [11] &quot;continentExp&quot;                                              
+## [12] &quot;Cumulative_number_for_14_days_of_COVID-19_cases_per_100000&quot;</code></pre>
+<pre class="r"><code>str(covid_data_tbl)</code></pre>
+<pre><code>## Classes &#39;data.table&#39; and &#39;data.frame&#39;:   60196 obs. of  12 variables:
+##  $ dateRep                                                   : chr  &quot;06/12/2020&quot; &quot;05/12/2020&quot; &quot;04/12/2020&quot; &quot;03/12/2020&quot; ...
+##  $ day                                                       : int  6 5 4 3 2 1 30 29 28 27 ...
+##  $ month                                                     : int  12 12 12 12 12 12 11 11 11 11 ...
+##  $ year                                                      : int  2020 2020 2020 2020 2020 2020 2020 2020 2020 2020 ...
+##  $ cases                                                     : int  234 235 119 202 400 272 0 228 214 0 ...
+##  $ deaths                                                    : int  10 18 5 19 48 11 0 11 15 0 ...
+##  $ countriesAndTerritories                                   : chr  &quot;Afghanistan&quot; &quot;Afghanistan&quot; &quot;Afghanistan&quot; &quot;Afghanistan&quot; ...
+##  $ geoId                                                     : chr  &quot;AF&quot; &quot;AF&quot; &quot;AF&quot; &quot;AF&quot; ...
+##  $ countryterritoryCode                                      : chr  &quot;AFG&quot; &quot;AFG&quot; &quot;AFG&quot; &quot;AFG&quot; ...
+##  $ popData2019                                               : int  38041757 38041757 38041757 38041757 38041757 38041757 38041757 38041757 38041757 38041757 ...
+##  $ continentExp                                              : chr  &quot;Asia&quot; &quot;Asia&quot; &quot;Asia&quot; &quot;Asia&quot; ...
+##  $ Cumulative_number_for_14_days_of_COVID-19_cases_per_100000: num  7.33 7.12 7.11 7.54 7.01 ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+<pre class="r"><code>#check the unique country present.
+unique(covid_data_tbl$countriesAndTerritories)</code></pre>
+<pre><code>##   [1] &quot;Afghanistan&quot;                               
+##   [2] &quot;Albania&quot;                                   
+##   [3] &quot;Algeria&quot;                                   
+##   [4] &quot;Andorra&quot;                                   
+##   [5] &quot;Angola&quot;                                    
+##   [6] &quot;Anguilla&quot;                                  
+##   [7] &quot;Antigua_and_Barbuda&quot;                       
+##   [8] &quot;Argentina&quot;                                 
+##   [9] &quot;Armenia&quot;                                   
+##  [10] &quot;Aruba&quot;                                     
+##  [11] &quot;Australia&quot;                                 
+##  [12] &quot;Austria&quot;                                   
+##  [13] &quot;Azerbaijan&quot;                                
+##  [14] &quot;Bahamas&quot;                                   
+##  [15] &quot;Bahrain&quot;                                   
+##  [16] &quot;Bangladesh&quot;                                
+##  [17] &quot;Barbados&quot;                                  
+##  [18] &quot;Belarus&quot;                                   
+##  [19] &quot;Belgium&quot;                                   
+##  [20] &quot;Belize&quot;                                    
+##  [21] &quot;Benin&quot;                                     
+##  [22] &quot;Bermuda&quot;                                   
+##  [23] &quot;Bhutan&quot;                                    
+##  [24] &quot;Bolivia&quot;                                   
+##  [25] &quot;Bonaire, Saint Eustatius and Saba&quot;         
+##  [26] &quot;Bosnia_and_Herzegovina&quot;                    
+##  [27] &quot;Botswana&quot;                                  
+##  [28] &quot;Brazil&quot;                                    
+##  [29] &quot;British_Virgin_Islands&quot;                    
+##  [30] &quot;Brunei_Darussalam&quot;                         
+##  [31] &quot;Bulgaria&quot;                                  
+##  [32] &quot;Burkina_Faso&quot;                              
+##  [33] &quot;Burundi&quot;                                   
+##  [34] &quot;Cambodia&quot;                                  
+##  [35] &quot;Cameroon&quot;                                  
+##  [36] &quot;Canada&quot;                                    
+##  [37] &quot;Cape_Verde&quot;                                
+##  [38] &quot;Cases_on_an_international_conveyance_Japan&quot;
+##  [39] &quot;Cayman_Islands&quot;                            
+##  [40] &quot;Central_African_Republic&quot;                  
+##  [41] &quot;Chad&quot;                                      
+##  [42] &quot;Chile&quot;                                     
+##  [43] &quot;China&quot;                                     
+##  [44] &quot;Colombia&quot;                                  
+##  [45] &quot;Comoros&quot;                                   
+##  [46] &quot;Congo&quot;                                     
+##  [47] &quot;Costa_Rica&quot;                                
+##  [48] &quot;Cote_dIvoire&quot;                              
+##  [49] &quot;Croatia&quot;                                   
+##  [50] &quot;Cuba&quot;                                      
+##  [51] &quot;CuraÃ§ao&quot;                                  
+##  [52] &quot;Cyprus&quot;                                    
+##  [53] &quot;Czechia&quot;                                   
+##  [54] &quot;Democratic_Republic_of_the_Congo&quot;          
+##  [55] &quot;Denmark&quot;                                   
+##  [56] &quot;Djibouti&quot;                                  
+##  [57] &quot;Dominica&quot;                                  
+##  [58] &quot;Dominican_Republic&quot;                        
+##  [59] &quot;Ecuador&quot;                                   
+##  [60] &quot;Egypt&quot;                                     
+##  [61] &quot;El_Salvador&quot;                               
+##  [62] &quot;Equatorial_Guinea&quot;                         
+##  [63] &quot;Eritrea&quot;                                   
+##  [64] &quot;Estonia&quot;                                   
+##  [65] &quot;Eswatini&quot;                                  
+##  [66] &quot;Ethiopia&quot;                                  
+##  [67] &quot;Falkland_Islands_(Malvinas)&quot;               
+##  [68] &quot;Faroe_Islands&quot;                             
+##  [69] &quot;Fiji&quot;                                      
+##  [70] &quot;Finland&quot;                                   
+##  [71] &quot;France&quot;                                    
+##  [72] &quot;French_Polynesia&quot;                          
+##  [73] &quot;Gabon&quot;                                     
+##  [74] &quot;Gambia&quot;                                    
+##  [75] &quot;Georgia&quot;                                   
+##  [76] &quot;Germany&quot;                                   
+##  [77] &quot;Ghana&quot;                                     
+##  [78] &quot;Gibraltar&quot;                                 
+##  [79] &quot;Greece&quot;                                    
+##  [80] &quot;Greenland&quot;                                 
+##  [81] &quot;Grenada&quot;                                   
+##  [82] &quot;Guam&quot;                                      
+##  [83] &quot;Guatemala&quot;                                 
+##  [84] &quot;Guernsey&quot;                                  
+##  [85] &quot;Guinea&quot;                                    
+##  [86] &quot;Guinea_Bissau&quot;                             
+##  [87] &quot;Guyana&quot;                                    
+##  [88] &quot;Haiti&quot;                                     
+##  [89] &quot;Holy_See&quot;                                  
+##  [90] &quot;Honduras&quot;                                  
+##  [91] &quot;Hungary&quot;                                   
+##  [92] &quot;Iceland&quot;                                   
+##  [93] &quot;India&quot;                                     
+##  [94] &quot;Indonesia&quot;                                 
+##  [95] &quot;Iran&quot;                                      
+##  [96] &quot;Iraq&quot;                                      
+##  [97] &quot;Ireland&quot;                                   
+##  [98] &quot;Isle_of_Man&quot;                               
+##  [99] &quot;Israel&quot;                                    
+## [100] &quot;Italy&quot;                                     
+## [101] &quot;Jamaica&quot;                                   
+## [102] &quot;Japan&quot;                                     
+## [103] &quot;Jersey&quot;                                    
+## [104] &quot;Jordan&quot;                                    
+## [105] &quot;Kazakhstan&quot;                                
+## [106] &quot;Kenya&quot;                                     
+## [107] &quot;Kosovo&quot;                                    
+## [108] &quot;Kuwait&quot;                                    
+## [109] &quot;Kyrgyzstan&quot;                                
+## [110] &quot;Laos&quot;                                      
+## [111] &quot;Latvia&quot;                                    
+## [112] &quot;Lebanon&quot;                                   
+## [113] &quot;Lesotho&quot;                                   
+## [114] &quot;Liberia&quot;                                   
+## [115] &quot;Libya&quot;                                     
+## [116] &quot;Liechtenstein&quot;                             
+## [117] &quot;Lithuania&quot;                                 
+## [118] &quot;Luxembourg&quot;                                
+## [119] &quot;Madagascar&quot;                                
+## [120] &quot;Malawi&quot;                                    
+## [121] &quot;Malaysia&quot;                                  
+## [122] &quot;Maldives&quot;                                  
+## [123] &quot;Mali&quot;                                      
+## [124] &quot;Malta&quot;                                     
+## [125] &quot;Marshall_Islands&quot;                          
+## [126] &quot;Mauritania&quot;                                
+## [127] &quot;Mauritius&quot;                                 
+## [128] &quot;Mexico&quot;                                    
+## [129] &quot;Moldova&quot;                                   
+## [130] &quot;Monaco&quot;                                    
+## [131] &quot;Mongolia&quot;                                  
+## [132] &quot;Montenegro&quot;                                
+## [133] &quot;Montserrat&quot;                                
+## [134] &quot;Morocco&quot;                                   
+## [135] &quot;Mozambique&quot;                                
+## [136] &quot;Myanmar&quot;                                   
+## [137] &quot;Namibia&quot;                                   
+## [138] &quot;Nepal&quot;                                     
+## [139] &quot;Netherlands&quot;                               
+## [140] &quot;New_Caledonia&quot;                             
+## [141] &quot;New_Zealand&quot;                               
+## [142] &quot;Nicaragua&quot;                                 
+## [143] &quot;Niger&quot;                                     
+## [144] &quot;Nigeria&quot;                                   
+## [145] &quot;North_Macedonia&quot;                           
+## [146] &quot;Northern_Mariana_Islands&quot;                  
+## [147] &quot;Norway&quot;                                    
+## [148] &quot;Oman&quot;                                      
+## [149] &quot;Pakistan&quot;                                  
+## [150] &quot;Palestine&quot;                                 
+## [151] &quot;Panama&quot;                                    
+## [152] &quot;Papua_New_Guinea&quot;                          
+## [153] &quot;Paraguay&quot;                                  
+## [154] &quot;Peru&quot;                                      
+## [155] &quot;Philippines&quot;                               
+## [156] &quot;Poland&quot;                                    
+## [157] &quot;Portugal&quot;                                  
+## [158] &quot;Puerto_Rico&quot;                               
+## [159] &quot;Qatar&quot;                                     
+## [160] &quot;Romania&quot;                                   
+## [161] &quot;Russia&quot;                                    
+## [162] &quot;Rwanda&quot;                                    
+## [163] &quot;Saint_Kitts_and_Nevis&quot;                     
+## [164] &quot;Saint_Lucia&quot;                               
+## [165] &quot;Saint_Vincent_and_the_Grenadines&quot;          
+## [166] &quot;San_Marino&quot;                                
+## [167] &quot;Sao_Tome_and_Principe&quot;                     
+## [168] &quot;Saudi_Arabia&quot;                              
+## [169] &quot;Senegal&quot;                                   
+## [170] &quot;Serbia&quot;                                    
+## [171] &quot;Seychelles&quot;                                
+## [172] &quot;Sierra_Leone&quot;                              
+## [173] &quot;Singapore&quot;                                 
+## [174] &quot;Sint_Maarten&quot;                              
+## [175] &quot;Slovakia&quot;                                  
+## [176] &quot;Slovenia&quot;                                  
+## [177] &quot;Solomon_Islands&quot;                           
+## [178] &quot;Somalia&quot;                                   
+## [179] &quot;South_Africa&quot;                              
+## [180] &quot;South_Korea&quot;                               
+## [181] &quot;South_Sudan&quot;                               
+## [182] &quot;Spain&quot;                                     
+## [183] &quot;Sri_Lanka&quot;                                 
+## [184] &quot;Sudan&quot;                                     
+## [185] &quot;Suriname&quot;                                  
+## [186] &quot;Sweden&quot;                                    
+## [187] &quot;Switzerland&quot;                               
+## [188] &quot;Syria&quot;                                     
+## [189] &quot;Taiwan&quot;                                    
+## [190] &quot;Tajikistan&quot;                                
+## [191] &quot;Thailand&quot;                                  
+## [192] &quot;Timor_Leste&quot;                               
+## [193] &quot;Togo&quot;                                      
+## [194] &quot;Trinidad_and_Tobago&quot;                       
+## [195] &quot;Tunisia&quot;                                   
+## [196] &quot;Turkey&quot;                                    
+## [197] &quot;Turks_and_Caicos_islands&quot;                  
+## [198] &quot;Uganda&quot;                                    
+## [199] &quot;Ukraine&quot;                                   
+## [200] &quot;United_Arab_Emirates&quot;                      
+## [201] &quot;United_Kingdom&quot;                            
+## [202] &quot;United_Republic_of_Tanzania&quot;               
+## [203] &quot;United_States_of_America&quot;                  
+## [204] &quot;United_States_Virgin_Islands&quot;              
+## [205] &quot;Uruguay&quot;                                   
+## [206] &quot;Uzbekistan&quot;                                
+## [207] &quot;Vanuatu&quot;                                   
+## [208] &quot;Venezuela&quot;                                 
+## [209] &quot;Vietnam&quot;                                   
+## [210] &quot;Wallis_and_Futuna&quot;                         
+## [211] &quot;Western_Sahara&quot;                            
+## [212] &quot;Yemen&quot;                                     
+## [213] &quot;Zambia&quot;                                    
+## [214] &quot;Zimbabwe&quot;</code></pre>
+<pre class="r"><code>#getting month name column
+covid_data_tbl$month_name&lt;-months(as.Date(covid_data_tbl$dateRep))
+
+##rolling up data to month year country Level
+covid_mon_yr_country_lvl &lt;- covid_data_tbl %&gt;% 
+  dplyr::group_by(month,month_name,year,countriesAndTerritories,geoId,countryterritoryCode,continentExp) %&gt;% 
+  dplyr::summarise(cases = sum(cases, na.rm = T)) %&gt;% 
+  dplyr::ungroup()
+
+##creating Cummulative Cases column
+covid_mon_yr_country_lvl &lt;- covid_mon_yr_country_lvl %&gt;% 
+  dplyr::arrange(countriesAndTerritories,year,month) %&gt;% 
+  dplyr::group_by(countriesAndTerritories) %&gt;% 
+  dplyr::mutate(cumulative_cases = cumsum(cases)) %&gt;% 
+  dplyr::ungroup()
+
+##I am filtering only for those shown in the graph and for the year = 2020
+covid_mon_yr_country_lvl_fil&lt;- covid_mon_yr_country_lvl %&gt;% 
+  dplyr::filter(countriesAndTerritories %in% c(&quot;Germany&quot;,&quot;Spain&quot;,&quot;France&quot;,&quot;United_Kingdom&quot;,&quot;United_States_of_America&quot;)&amp; year == 2020) %&gt;%
+  dplyr::rename(&#39;Continent_Country&#39; = countriesAndTerritories)
+
+#Graph using ggploat
+covid_mon_yr_country_lvl_fil %&gt;% 
+  mutate(label = if_else(month_name == &quot;December&quot;,as.character(cumulative_cases),NA_character_)) %&gt;% 
+  ggplot(aes(x=month,y =cumulative_cases))+
+  geom_line(aes(color = Continent_Country))+
+  scale_colour_brewer(palette = &quot;Set3&quot;)+
+  scale_x_continuous(breaks=covid_mon_yr_country_lvl_fil$month,labels = covid_mon_yr_country_lvl_fil$month_name)+
+  scale_y_continuous(labels = scales::dollar_format(scale = 1/1e6,
+                                                    prefix = &quot;&quot;,
+                                                    suffix = &quot;M&quot;))+
+  labs(title = &quot;COVID-19 confirmed cases worldwide&quot;,
+       subtitle =  &quot;As of 12/5/2020,USA has the highest cases.&quot;,
+       x = &quot;Year 2020&quot;,
+       y= &quot;Cumulative Cases&quot;
+  )+
+  theme(legend.position = &quot;bottom&quot;,
+        axis.text.x = element_text(angle=45,hjust = 1))+
+  geom_label_repel(aes(label=label),
+                   nudge_x = 1,na.rm = TRUE)</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+</div>
+<div id="problem-statement-1" class="section level2">
+<h2><span class="header-section-number">3.2</span> Problem Statement :</h2>
+<p>“Goal: Visualize the distribution of the mortality rate (deaths / population) with geom_map().”</p>
+<pre class="r"><code># Importing library-----
+library(tidyverse)
+library(data.table)
+library(ggplot2)
+library(ggrepel)
+library(maps)
+library(ggthemes)
+library(mapproj)
+
+# Importing Data from given url-----
+url &lt;- &quot;https://opendata.ecdc.europa.eu/covid19/casedistribution/csv&quot;
+covid_data_tbl &lt;- fread(url)
+
+#creating the variable of the world and giving the data of map
+world &lt;- map_data(&quot;world&quot;)
+colnames((world))</code></pre>
+<pre><code>## [1] &quot;long&quot;      &quot;lat&quot;       &quot;group&quot;     &quot;order&quot;     &quot;region&quot;    &quot;subregion&quot;</code></pre>
+<pre class="r"><code>#Removing all the _ and , in between the names of country 
+covid_data_tbl$countriesAndTerritories &lt;- str_replace_all(covid_data_tbl$countriesAndTerritories,&quot;_&quot;,&quot; &quot;)
+world_data&lt;- covid_data_tbl %&gt;% 
+  dplyr::mutate(countriesAndTerritories = case_when(
+    countriesAndTerritories == &quot;United Kingdom&quot; ~ &quot;UK&quot;,
+    countriesAndTerritories == &quot;United States of America&quot; ~ &quot;USA&quot;,
+    countriesAndTerritories == &quot;Czechia&quot; ~ &quot;Czech Republic&quot;,
+    TRUE ~ countriesAndTerritories
+  ))
+
+options(scipen = 999)
+
+# calculating the mortality rate of each country 
+country_mortality_rate&lt;- world_data %&gt;% 
+  dplyr::group_by(countriesAndTerritories) %&gt;% 
+  dplyr::summarise(deaths = sum(deaths, na.rm = T),
+                   popData2019 = nth(popData2019,1)) %&gt;% 
+  dplyr::mutate(mortality_rate = round((deaths/popData2019)*100,3))
+
+# Plot the mortality rate of each country 
+plot_data &lt;- country_mortality_rate %&gt;%  
+  dplyr::right_join(world,by=c(&quot;countriesAndTerritories&quot;=&quot;region&quot;))
+
+plot_data %&gt;% ggplot()+
+  geom_map(map = world,aes(map_id = countriesAndTerritories,fill=mortality_rate),color = &quot;#7f7f7f&quot;,size=0.25)+
+  scale_fill_gradient(low=&quot;#FF3333&quot;,high = &quot;#330000&quot;,name=&quot;Mortality Rate&quot;)+
+  expand_limits(x= world$long,y=world$lat)+
+  labs(x=&quot;&quot;,y=&quot;&quot;,title=&quot;Cnfirmed COVID-19 deaths relative to the size of population&quot;)</code></pre>
+<p><img src="journal_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
 </div>
 <div id="adding-r-stuff" class="section level1">
-<h1><span class="header-section-number">3</span> Adding R stuff</h1>
+<h1><span class="header-section-number">4</span> Adding R stuff</h1>
 <p>So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place.</p>
 <p>So, let’s say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:</p>
 <pre class="r"><code>samples &lt;- rnorm(100, mean=0, sd=1)
 hist(samples)</code></pre>
-<p><img src="journal_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p><img src="journal_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You’ll learn that all of these things and more can be customized in each R code block.</p>
 </div>
 

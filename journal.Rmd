@@ -20,25 +20,450 @@ knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
 
 This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
 
-# My first post
+# Challenge : Intro to the tidyverse
 
 Last compiled: `r Sys.Date()`
 
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
+## Problem Statment :-
 
-## Second level header
+" Analyze the sales by location (state) with a bar plot. Since state and city are multiple features (variables), they should be split. Which state has the highes revenue? Replace your bike_orderlines_wrangled_tbl object with the newly wrangled object (with the columns state and city)."
 
-You can add more headers by adding more hashtags. These won't be put into the table of contents
+```{r}
+# 2.0 Importing library ----
+library(readxl)
+library(dplyr)
+library(stringr)
+library(rlang)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(writexl)
+library(readr)
 
-### third level header
+# 2.0 Importing Files ----
+# A good convention is to use the file name and suffix it with tbl for the data structure tibble
 
-Here's an even lower level header
+bikes_tbl <- read_excel("C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikes.xlsx")
+orderlines_tbl <- read_excel("C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/orderlines.xlsx")
+bikeshops_tbl <- read_excel("C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikeshops.xlsx")
 
-# My second post (note the order)
+# If the data has no common column name, you can provide each column name in the "by" argument. For example, by = c("a" = "b") will match x.a to y.b. The order of the columns has to match the order of the tibbles).
+
+left_join(orderlines_tbl, bikes_tbl, by = c("product.id" = "bike.id"))
+
+# Chaining commands with the pipe and assigning it to 
+
+bike_orderlines_joined_tbl <- orderlines_tbl %>%
+  left_join(bikes_tbl, by = c("product.id" = "bike.id")) %>%
+  left_join(bikeshops_tbl, by = c("customer.id" = "bikeshop.id"))
+
+# Examine the results with glimpse()
+bike_orderlines_joined_tbl %>% glimpse()
+
+bike_orderlines_joined_tbl %>% 
+  select(category) %>%
+  filter(str_detect(category, "^Mountain")) %>% 
+  unique()
+
+# 3.0 Wrangling Data ----
+# All actions are chained with the pipe already. You can perform each step separately and use glimpse() or View() to validate your code. Store the result in a variable at the end of the steps.
+bike_orderlines_wrangled_tbl <- bike_orderlines_joined_tbl %>%
+  # 3.1 Separate category name
+  separate (col= category,into   = c("category.1", "category.2", "category.3"),sep= " - ")%>% 
+  # 3.2 Add the total price (price * quantity) 
+  # Add a column to a tibble that uses a formula-style calculation of other columns
+  mutate(total.price = price * quantity) %>%
+  # 3.3 Optional: Reorganize. Using select to grab or remove unnecessary columns
+  # 3.3.1 by exact column name
+  select(-...1, -gender) %>%
+  # 3.3.2 by a pattern
+  # You can use the select_helpers to define patterns. 
+  # Type ?ends_with and click on Select helpers in the documentation
+  select(-ends_with(".id")) %>%
+  # 3.3.3 Actually we need the column "order.id". Let's bind it back to the data
+  bind_cols(bike_orderlines_joined_tbl %>% select(order.id)) %>%
+  # 3.3.4 You can reorder the data by selecting the columns in your desired order.
+  # You can use select_helpers like contains() or everything()
+  select(order.id, contains("order"), contains("model"), contains("category"),
+         price, quantity, total.price,
+         everything()) %>%
+  # 3.4 Rename columns because we actually wanted underscores instead of the dots
+  # (one at the time vs. multiple at once)
+  rename(bikeshop = name) %>%
+  set_names(names(.) %>% str_replace_all("\\.", "_"))
+
+# 4.0 Business Insights ----
+# 4.1 Sales by location ----
+
+# Step 1 - Manipulate
+sales_by_state_cat_1_tbl <- bike_orderlines_wrangled_tbl %>%
+  # Select columns
+  tidyr::separate(col = location,
+           into = c("city","state"),
+           sep = ",") %>% 
+  # Select columns and add a year
+  select(state, total_price) %>%
+  
+  # Group by and summarize year and main catgegory
+  group_by(state) %>%
+  summarise(sales = sum(total_price)) %>%
+  ungroup() 
+
+sales_by_state_cat_1_tbl
+
+
+# Step to Visualize 
+sales_by_state_cat_1_tbl %>%
+  
+  # Set up x, y, fill
+  ggplot(aes(x = state, y = sales)) +
+  
+  # Geometries
+  geom_col() + # Run up to here to get a stacked bar plot
+  
+  # Formatting
+  scale_y_continuous(labels = scales::dollar_format(big.mark = ".", 
+                                                    decimal.mark = ",", 
+                                                    prefix = "", 
+                                                    suffix = " €")) +
+  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+ 
+  
+  labs(
+    title = "Revenue by year and main category",
+    subtitle = "Each product category has an upward trend",
+    fill = "Main category" # Changes the legend name
+  )
+
+
+```
+
+## Problem Statment 1.2
+
+Analyze the sales by location and year (facet_wrap). Because there are 12 states with bike stores, you should get 12 plots.
+Insert your scripts and results into your website. It might be easier to move your entire project folder into your website folder.
+
+
+```{r}
+# 2.0 Importing library ----
+library(readxl)
+library(dplyr)
+library(stringr)
+library(rlang)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+library(writexl)
+library(readr)
+
+# 2.0 Importing Files ----
+# A good convention is to use the file name and suffix it with tbl for the data structure tibble
+
+bikes_tbl <- read_excel("C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikes.xlsx")
+orderlines_tbl <- read_excel("C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/orderlines.xlsx")
+bikeshops_tbl <- read_excel("C:/Users/veere/OneDrive/Desktop/Third/Bussines Data Science/DS_101/DS_101/00_data/01_bike_sales/01_raw_data/bikeshops.xlsx")
+
+# If the data has no common column name, you can provide each column name in the "by" argument. For example, by = c("a" = "b") will match x.a to y.b. The order of the columns has to match the order of the tibbles).
+
+left_join(orderlines_tbl, bikes_tbl, by = c("product.id" = "bike.id"))
+
+# Chaining commands with the pipe and assigning it to 
+
+bike_orderlines_joined_tbl <- orderlines_tbl %>%
+  left_join(bikes_tbl, by = c("product.id" = "bike.id")) %>%
+  left_join(bikeshops_tbl, by = c("customer.id" = "bikeshop.id"))
+
+# Examine the results with glimpse()
+bike_orderlines_joined_tbl %>% glimpse()
+
+bike_orderlines_joined_tbl %>% 
+  select(category) %>%
+  filter(str_detect(category, "^Mountain")) %>% 
+  unique()
+
+# 3.0 Wrangling Data ----
+# All actions are chained with the pipe already. You can perform each step separately and use glimpse() or View() to validate your code. Store the result in a variable at the end of the steps.
+bike_orderlines_wrangled_tbl <- bike_orderlines_joined_tbl %>%
+  # 3.1 Separate category name
+  separate (col= category,into   = c("category.1", "category.2", "category.3"),sep= " - ")%>% 
+  # 3.2 Add the total price (price * quantity) 
+  # Add a column to a tibble that uses a formula-style calculation of other columns
+  mutate(total.price = price * quantity) %>%
+  # 3.3 Optional: Reorganize. Using select to grab or remove unnecessary columns
+  # 3.3.1 by exact column name
+  select(-...1, -gender) %>%
+  # 3.3.2 by a pattern
+  # You can use the select_helpers to define patterns. 
+  # Type ?ends_with and click on Select helpers in the documentation
+  select(-ends_with(".id")) %>%
+  # 3.3.3 Actually we need the column "order.id". Let's bind it back to the data
+  bind_cols(bike_orderlines_joined_tbl %>% select(order.id)) %>%
+  # 3.3.4 You can reorder the data by selecting the columns in your desired order.
+  # You can use select_helpers like contains() or everything()
+  select(order.id, contains("order"), contains("model"), contains("category"),
+         price, quantity, total.price,
+         everything()) %>%
+  # 3.4 Rename columns because we actually wanted underscores instead of the dots
+  # (one at the time vs. multiple at once)
+  rename(bikeshop = name) %>%
+  set_names(names(.) %>% str_replace_all("\\.", "_"))
+
+# 4.0 Business Insights ----
+# 4.1 Sales by location ----
+
+# Step 1 - Manipulate
+sales_by_year_state_cat_1_tbl <- bike_orderlines_wrangled_tbl %>%
+  tidyr::separate(col = location,
+                  into = c("city","state"),
+                  sep = ",") %>% 
+  
+  # Select columns and add a year
+  select(state,order_date, total_price) %>%
+  mutate(year = year(order_date)) %>% 
+  
+  # Group by and summarize year and main catgegory
+  group_by(year,state) %>%
+  summarise(sales = sum(total_price)) %>%
+  ungroup() 
+
+# Step 2 - Visualize
+sales_by_year_state_cat_1_tbl %>%
+  
+  # Set up x, y, fill
+  ggplot(aes(x = year, y = sales, fill = state )) +
+  
+  # Geometries
+  geom_col() + # Run up to here to get a stacked bar plot
+  
+  facet_wrap(~ state)+
+  
+  # Formatting
+  scale_y_continuous(labels = scales::dollar_format(big.mark = ".", 
+                                                    decimal.mark = ",", 
+                                                    prefix = "", 
+                                                    suffix = " €")) +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  
+  labs(
+    title = "Revenue by year and main category",
+    subtitle = "Each product category has an upward trend",
+    fill = "Main category" # Changes the legend name
+  )
+
+
+```
+
+# Challenge : Data Acquisition
 
 Last compiled: `r Sys.Date()`
 
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
+
+## Problem Statment :-
+ " Get some data via an API. There are millions of providers, that offer API access for free and have good documentation about how to query their service. You just have to google them. You can use whatever service you want. For example, you can get data about your listening history (spotify), get data about flights (skyscanner) or just check the weather forecast."
+
+
+```{r}
+## API Challenge 
+### This API to find out when the ISS (International Space Station) will be passing over Hamburg (which is at latitude 53.5511, longitude: 9.9937):
+#This API returns times to us in the form of Unix time.
+
+library(glue)
+library(httr)
+library(jsonlite)
+resp <- GET("http://api.open-notify.org/iss-pass.json", query = list(lat =53.5511, lon = 9.9937))
+resp
+data = fromJSON(rawToChar(resp$content))
+data
+
+```
+
+## Problem Statment :-
+
+ " Scrape one of the competitor websites of canyon (either https://www.rosebikes.de/ or https://www.radon-bikes.de) and create a small database. The database should contain the model names and prices for at least one category. Use the selectorgadget to get a good understanding of the website structure."
+
+
+```{r}
+
+# WEBSCRAPING ----
+
+
+# 1.0 LIBRARIES ----
+
+library(tidyverse) # Main Package - Loads dplyr, purrr, etc.
+library(rvest)     # HTML Hacking & Web Scraping
+library(xopen)     # Quickly opening URLs
+library(jsonlite)  # converts JSON files to R objects
+library(glue)      # concatenate strings
+library(stringi)   # character string/text processing
+
+# 1.1 COLLECT PRODUCT TYPES ----
+url_home          <- "https://www.radon-bikes.de/"
+xopen(url_home)
+html_home         <- read_html(url_home)
+bike_family_tbl <- html_home %>%
+html_nodes(css = ".megamenu__item > a") %>%  
+html_attr('href') %>%  
+discard(.p = ~stringr::str_detect(.x,"wear")) %>%  
+enframe(name = "position", value = "cat_subcat_url") %>%  
+  
+mutate(family_id = str_glue("https://www.radon-bikes.de{cat_subcat_url}bikegrid"))
+bike_family_tbl
+
+ 
+# 2.0 COLLECT BIKE DATA ----
+
+bike_category_url <- bike_family_tbl$family_id[1]
+xopen(bike_category_url)
+html_bike_category  <- read_html(bike_category_url)
+
+bike_name_tbl        <- html_bike_category %>%
+html_nodes(css = ".m-bikegrid__info .a-heading--small") %>%
+html_text() %>%
+
+
+enframe(name = "position", value = "name")
+bike_name_tbl 
+
+bike_price_tbl <- html_bike_category %>%
+html_nodes(css = ".m-bikegrid__price.currency_eur .m-bikegrid__price--active") %>%  
+html_text() %>% 
+enframe(name = "position", value = "price")
+bike_price_tbl
+
+model_price_tbl <- left_join(bike_name_tbl, bike_price_tbl)%>% 
+select(name, price)
+model_price_tbl
+
+
+```
+
+
+# Challenge : Data Visualization
+
+Last compiled: `r Sys.Date()`
+
+## Problem Statement :
+
+"Goal: Map the time course of the cumulative Covid-19 cases!"
+
+```{r}
+# Data Visualization
+
+# Importing library-----
+
+library(tidyverse)
+library(data.table)
+library(ggplot2)
+library(ggrepel)
+
+# Importing Data from given url-----
+url <- "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"
+covid_data_tbl <- fread(url)
+
+class(covid_data_tbl)
+colnames(covid_data_tbl)
+str(covid_data_tbl)
+
+#check the unique country present.
+unique(covid_data_tbl$countriesAndTerritories)
+
+#getting month name column
+covid_data_tbl$month_name<-months(as.Date(covid_data_tbl$dateRep))
+
+##rolling up data to month year country Level
+covid_mon_yr_country_lvl <- covid_data_tbl %>% 
+  dplyr::group_by(month,month_name,year,countriesAndTerritories,geoId,countryterritoryCode,continentExp) %>% 
+  dplyr::summarise(cases = sum(cases, na.rm = T)) %>% 
+  dplyr::ungroup()
+
+##creating Cummulative Cases column
+covid_mon_yr_country_lvl <- covid_mon_yr_country_lvl %>% 
+  dplyr::arrange(countriesAndTerritories,year,month) %>% 
+  dplyr::group_by(countriesAndTerritories) %>% 
+  dplyr::mutate(cumulative_cases = cumsum(cases)) %>% 
+  dplyr::ungroup()
+
+##I am filtering only for those shown in the graph and for the year = 2020
+covid_mon_yr_country_lvl_fil<- covid_mon_yr_country_lvl %>% 
+  dplyr::filter(countriesAndTerritories %in% c("Germany","Spain","France","United_Kingdom","United_States_of_America")& year == 2020) %>%
+  dplyr::rename('Continent_Country' = countriesAndTerritories)
+
+#Graph using ggploat
+covid_mon_yr_country_lvl_fil %>% 
+  mutate(label = if_else(month_name == "December",as.character(cumulative_cases),NA_character_)) %>% 
+  ggplot(aes(x=month,y =cumulative_cases))+
+  geom_line(aes(color = Continent_Country))+
+  scale_colour_brewer(palette = "Set3")+
+  scale_x_continuous(breaks=covid_mon_yr_country_lvl_fil$month,labels = covid_mon_yr_country_lvl_fil$month_name)+
+  scale_y_continuous(labels = scales::dollar_format(scale = 1/1e6,
+                                                    prefix = "",
+                                                    suffix = "M"))+
+  labs(title = "COVID-19 confirmed cases worldwide",
+       subtitle =  "As of 12/5/2020,USA has the highest cases.",
+       x = "Year 2020",
+       y= "Cumulative Cases"
+  )+
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle=45,hjust = 1))+
+  geom_label_repel(aes(label=label),
+                   nudge_x = 1,na.rm = TRUE)
+```
+
+
+## Problem Statement :
+
+"Goal: Visualize the distribution of the mortality rate (deaths / population) with geom_map()."
+
+
+```{r}
+# Importing library-----
+library(tidyverse)
+library(data.table)
+library(ggplot2)
+library(ggrepel)
+library(maps)
+library(ggthemes)
+library(mapproj)
+
+# Importing Data from given url-----
+url <- "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"
+covid_data_tbl <- fread(url)
+
+#creating the variable of the world and giving the data of map
+world <- map_data("world")
+colnames((world))
+
+#Removing all the _ and , in between the names of country 
+covid_data_tbl$countriesAndTerritories <- str_replace_all(covid_data_tbl$countriesAndTerritories,"_"," ")
+world_data<- covid_data_tbl %>% 
+  dplyr::mutate(countriesAndTerritories = case_when(
+    countriesAndTerritories == "United Kingdom" ~ "UK",
+    countriesAndTerritories == "United States of America" ~ "USA",
+    countriesAndTerritories == "Czechia" ~ "Czech Republic",
+    TRUE ~ countriesAndTerritories
+  ))
+
+options(scipen = 999)
+
+# calculating the mortality rate of each country 
+country_mortality_rate<- world_data %>% 
+  dplyr::group_by(countriesAndTerritories) %>% 
+  dplyr::summarise(deaths = sum(deaths, na.rm = T),
+                   popData2019 = nth(popData2019,1)) %>% 
+  dplyr::mutate(mortality_rate = round((deaths/popData2019)*100,3))
+
+# Plot the mortality rate of each country 
+plot_data <- country_mortality_rate %>%  
+  dplyr::right_join(world,by=c("countriesAndTerritories"="region"))
+
+plot_data %>% ggplot()+
+  geom_map(map = world,aes(map_id = countriesAndTerritories,fill=mortality_rate),color = "#7f7f7f",size=0.25)+
+  scale_fill_gradient(low="#FF3333",high = "#330000",name="Mortality Rate")+
+  expand_limits(x= world$long,y=world$lat)+
+  labs(x="",y="",title="Cnfirmed COVID-19 deaths relative to the size of population")
+
+```
+
 
 # Adding R stuff
 
